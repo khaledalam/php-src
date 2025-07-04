@@ -68,6 +68,7 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 %left T_BOOLEAN_AND
 %left '|'
 %left '^'
+%left T_FAIL_FAST
 %left T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG T_AMPERSAND_FOLLOWED_BY_VAR_OR_VARARG
 %nonassoc T_IS_EQUAL T_IS_NOT_EQUAL T_IS_IDENTICAL T_IS_NOT_IDENTICAL T_SPACESHIP
 %nonassoc '<' T_IS_SMALLER_OR_EQUAL '>' T_IS_GREATER_OR_EQUAL
@@ -206,6 +207,7 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 %token T_IS_NOT_IDENTICAL "'!=='"
 %token T_IS_SMALLER_OR_EQUAL "'<='"
 %token T_IS_GREATER_OR_EQUAL "'>='"
+%token T_FAIL_FAST "'=>!'"
 %token T_SPACESHIP "'<=>'"
 %token T_SL "'<<'"
 %token T_SR "'>>'"
@@ -1313,6 +1315,8 @@ expr:
 			{ $$ = zend_ast_create(ZEND_AST_GREATER, $1, $3); }
 	|	expr T_IS_GREATER_OR_EQUAL expr
 			{ $$ = zend_ast_create(ZEND_AST_GREATER_EQUAL, $1, $3); }
+	| 	expr T_FAIL_FAST expr
+			{ $$ = zend_ast_create_ex(ZEND_AST_FAIL_FAST, 0, $1, $3); }
 	|	expr T_SPACESHIP expr
 			{ $$ = zend_ast_create_binary_op(ZEND_SPACESHIP, $1, $3); }
 	|	expr T_INSTANCEOF class_name_reference

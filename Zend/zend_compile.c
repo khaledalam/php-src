@@ -6477,6 +6477,33 @@ static void zend_compile_pipe(znode *result, zend_ast *ast)
 	zend_compile_expr(result, fcall_ast);
 }
 
+static void zend_compile_fail_fast(znode *result, zend_ast *ast)
+{
+    zend_ast *value_ast = ast->child[0];
+    zend_ast *fail_ast = ast->child[1];
+
+    znode value_node;
+    zend_compile_expr(&value_node, value_ast);
+
+    // Jump if truthy (normal value path)
+    zend_op *jmpnz_op = zend_emit_op(NULL, ZEND_JMPNZ, &value_node, NULL);
+    
+	// Fail path
+    zend_compile_stmt(fail_ast);
+
+	// jump if value is truthy
+    jmpnz_op->op2.opline_num = get_next_op_number();
+
+    // If fail_ast doesn't throw/die, just return the value (optional fallback)
+    if (result) {
+        *result = value_node;
+    }
+
+    // Set jump target to skip the fail block if value is truthy
+    jmpnz_op->op2.opline_num = get_next_op_number();
+}
+
+
 static void zend_compile_match(znode *result, zend_ast *ast)
 {
 	zend_ast *expr_ast = ast->child[0];
@@ -11818,6 +11845,9 @@ static void zend_compile_expr_inner(znode *result, zend_ast *ast) /* {{{ */
 			return;
 		case ZEND_AST_PIPE:
 			zend_compile_pipe(result, ast);
+			return;
+		case ZEND_AST_FAIL_FAST:
+			zend_compile_fail_fast(result, ast);
 			return;
 		default:
 			ZEND_ASSERT(0 /* not supported */);

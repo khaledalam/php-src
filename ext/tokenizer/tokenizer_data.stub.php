@@ -584,6 +584,11 @@ const T_IS_SMALLER_OR_EQUAL = UNKNOWN;
 const T_IS_GREATER_OR_EQUAL = UNKNOWN;
 /**
  * @var int
+ * @cvalue T_FAIL_FAST
+ */
+const T_FAIL_FAST = UNKNOWN;
+/**
+ * @var int
  * @cvalue T_SPACESHIP
  */
 const T_SPACESHIP = UNKNOWN;

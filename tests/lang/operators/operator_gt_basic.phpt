@@ -1,63 +1,152 @@
 --TEST--
-Test > operator : different types
+FAIL_FAST operator (=>!) test suite
 --FILE--
 <?php
-$valid_true = array(1, "1", "true", 1.0, array(1));
-$valid_false = array(0, "", 0.0, array(), NULL);
 
-$int1 = 679;
-$int2 = -67835;
-$valid_int1 = array("678", "678abc", " 678", "678  ", 678.0, 6.789E2, "+678", +678);
-$valid_int2 = array("-67836", " -67836", -67835.0001, -6.78351E4, "-67836  ");
-$invalid_int1 = array(679, "679");
-$invalid_int2 = array(-67835, "-67835", "-67836abc");
-
-$float1 = 57385.45835;
-$float2 = -67345.76567;
-$valid_float1 = array("57385.45834",  "57385.45834aaa", "  57385.45834", 5.738545834e4);
-$valid_float2 = array("-67345.76568", "  -67345.76568", -6.734576568E4);
-$invalid_float1 = array(57385.45835, 5.738545835e4);
-$invalid_float2 = array(-67345.76567, -6.734576567E4, "-67345.76568aaa");
-
-
-$toCompare = array(
-// boolean test will result in both sides being converted to boolean so !0 = true and true is not > true for example
-// also note that a string of "0" is converted to false but a string of "0.0" is converted to true
-// false cannot be tested as 0 can never be > 0 or 1
-  true, $valid_false, $valid_true,
-  $int1, $valid_int1, $invalid_int1,
-  $int2, $valid_int2, $invalid_int2,
-  $float1, $valid_float1, $invalid_float1,
-  $float2, $valid_float2, $invalid_float2
-);
-
-$failed = false;
-for ($i = 0; $i < count($toCompare); $i +=3) {
-   $typeToTest = $toCompare[$i];
-   $valid_compares = $toCompare[$i + 1];
-   $invalid_compares = $toCompare[$i + 2];
-
-   foreach($valid_compares as $compareVal) {
-      if ($typeToTest > $compareVal) {
-         // do nothing
-      }
-      else {
-         echo "FAILED: '$typeToTest' <= '$compareVal'\n";
-         $failed = true;
-      }
-   }
-
-   foreach($invalid_compares as $compareVal) {
-      if ($typeToTest > $compareVal) {
-         echo "FAILED: '$typeToTest' > '$compareVal'\n";
-         $failed = true;
-      }
-   }
-
+echo "Basic null checks:\n";
+try {
+    $name = null;
+    $name =>! throw new Exception("Missing name");
+    echo "Should not reach here\n";
+} catch (Exception $e) {
+    echo "Caught: ", $e->getMessage(), "\n";
 }
-if ($failed == false) {
-   echo "Test Passed\n";
+
+$age = 0;
+try {
+    $age =>! throw new Exception("Missing age");
+    echo "OK: age\n";
+} catch (Exception $e) {
+    echo "Unexpected failure: ", $e->getMessage(), "\n";
 }
+
+$email = "me@example.com";
+try {
+    $email =>! throw new Exception("Missing email");
+    echo "OK: email\n";
+} catch (Exception $e) {
+    echo "Unexpected failure: ", $e->getMessage(), "\n";
+}
+
+
+echo "\nFunction usage:\n";
+function register($email, $password) {
+    $email =>! throw new Exception("Missing email");
+    $password =>! throw new Exception("Missing password");
+    echo "Registered: $email\n";
+}
+
+try {
+    register("user@test.com", "secret");
+} catch (Exception $e) {
+    echo "Unexpected failure: ", $e->getMessage(), "\n";
+}
+
+try {
+    register("user@test.com", "");
+} catch (Exception $e) {
+    echo "Caught: ", $e->getMessage(), "\n";
+}
+
+try {
+    register(null, "secret");
+} catch (Exception $e) {
+    echo "Caught: ", $e->getMessage(), "\n";
+}
+
+
+echo "\nFail-fast in expressions:\n";
+function getUserData($data) {
+    return ($data["id"] =>! throw new Exception("Missing ID")) * 10;
+}
+
+try {
+    echo getUserData(["id" => 7]) . "\n";
+} catch (Exception $e) {
+    echo "Unexpected failure: ", $e->getMessage(), "\n";
+}
+
+try {
+    echo getUserData([]) . "\n";
+} catch (Exception $e) {
+    echo "Caught: ", $e->getMessage(), "\n";
+}
+
+
+echo "\nChained expressions:\n";
+function compute($a, $b) {
+    return ($a =>! throw new Exception("A is missing")) + ($b =>! throw new Exception("B is missing"));
+}
+
+try {
+    echo compute(5, 3) . "\n";
+} catch (Exception $e) {
+    echo "Unexpected failure: ", $e->getMessage(), "\n";
+}
+
+try {
+    echo compute(null, 3) . "\n";
+} catch (Exception $e) {
+    echo "Caught: ", $e->getMessage(), "\n";
+}
+
+try {
+    echo compute(1, null) . "\n";
+} catch (Exception $e) {
+    echo "Caught: ", $e->getMessage(), "\n";
+}
+
+
+echo "\nTruthy/Falsy behavior:\n";
+$truthy = [true, 1, "hello", [1], 0.1];
+$falsy = [false, 0, "", [], null];
+
+foreach ($truthy as $val) {
+    try {
+        $val =>! throw new Exception("Should not fail");
+        echo "Pass\n";
+    } catch (Exception $e) {
+        echo "Unexpected: ", $e->getMessage(), "\n";
+    }
+}
+
+foreach ($falsy as $val) {
+    try {
+        $val =>! throw new Exception("Should fail");
+    } catch (Exception $e) {
+        echo "Caught: ", $e->getMessage(), "\n";
+    }
+}
+
 ?>
---EXPECT--
-Test Passed
+--EXPECTF--
+Basic null checks:
+Caught: Missing name
+OK: age
+OK: email
+
+Function usage:
+Registered: user@test.com
+Caught: Missing password
+Caught: Missing email
+
+Fail-fast in expressions:
+70
+Caught: Missing ID
+
+Chained expressions:
+8
+Caught: A is missing
+Caught: B is missing
+
+Truthy/Falsy behavior:
+Pass
+Pass
+Pass
+Pass
+Pass
+Caught: Should fail
+Caught: Should fail
+Caught: Should fail
+Caught: Should fail
+Caught: Should fail

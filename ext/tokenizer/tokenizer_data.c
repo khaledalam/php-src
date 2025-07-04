@@ -141,6 +141,7 @@ char *get_token_type_name(int token_type)
 		case T_IS_NOT_IDENTICAL: return "T_IS_NOT_IDENTICAL";
 		case T_IS_SMALLER_OR_EQUAL: return "T_IS_SMALLER_OR_EQUAL";
 		case T_IS_GREATER_OR_EQUAL: return "T_IS_GREATER_OR_EQUAL";
+		case T_FAIL_FAST: return "T_FAIL_FAST";
 		case T_SPACESHIP: return "T_SPACESHIP";
 		case T_SL: return "T_SL";
 		case T_SR: return "T_SR";
